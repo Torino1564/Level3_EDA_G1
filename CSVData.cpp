@@ -30,7 +30,7 @@ bool readCSV(const string path, CSVData &data)
         return false;
 
     file.seekg(0, ios::end);
-    int fileSize = file.tellg();
+    int fileSize = static_cast<int>(file.tellg());
     char *fileData = new char[fileSize];
     file.seekg(0);
     file.read(&fileData[0], fileSize);
