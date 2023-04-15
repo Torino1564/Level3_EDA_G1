@@ -1,0 +1,15 @@
+{
+    "Field": "Chest Pain",
+    "Values": {
+        "Typical": {
+            "Field": "Max Heart Rate",
+            "values": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ]
+        }
+    }
+}

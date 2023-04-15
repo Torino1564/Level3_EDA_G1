@@ -3,6 +3,8 @@
 #include "CSVData.h"
 #include <iostream>
 #include <cmath>
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 #define PATH "Datasets/heart.csv"
 
@@ -22,10 +24,11 @@ HeartDataSet::HeartDataSet()
     matrix.emplace(Fields::ExerciseAngina , std::vector<int>{ (int)ExerciseAngina::No , (int)ExerciseAngina::Yes } );
     matrix.emplace(Fields::PreviousPeak , std::vector<int>{ (int)PreviousPeak::Low , (int)PreviousPeak::High} );
     matrix.emplace(Fields::Slope , std::vector<int>{ (int)Slope::Null , (int)Slope::Plane , (int)Slope::Low} );
+    matrix.emplace(Fields::MajorVesselNum , std::vector<int>{ (int)MajorVesselNum::Zero , (int)MajorVesselNum::One ,(int)MajorVesselNum::Two , (int)MajorVesselNum::Three, (int)MajorVesselNum::Four } );
     matrix.emplace(Fields::Thallasemia , std::vector<int>{ (int)Thallasemia::Null , (int)Thallasemia::Unfixable , (int)Thallasemia::Normal , (int)Thallasemia::Fixable } );
     matrix.emplace(Fields::Output , std::vector<int>{ (int)Output::No , (int)Output::Yes });
 
-
+    remainingFields = (int)(vFields.size() - 1);
 }
 
 void HeartDataSet::readDatasetData()
@@ -131,10 +134,21 @@ void HeartDataSet::readDatasetData()
         }
 
         // Resting electrocariographic result
-        Data.back()[(int)Fields::RestingElectroCardio] = stoi(b[6]);
+        if (stoi(b[6]) == 0)
+        {
+            Data.back()[(int)Fields::RestingElectroCardio] = (int)RestingElectroCardio::Zero;
+        }
+        else if (stoi(b[6]) == 1)
+        {
+            Data.back()[(int)Fields::RestingElectroCardio] = (int)RestingElectroCardio::One;
+        }
+        else if (stoi(b[6]) == 2)
+        {
+            Data.back()[(int)Fields::RestingElectroCardio] = (int)RestingElectroCardio::Two;
+        }
 
         // Maximum Heart Rate
-        if ( stoi(b[6]) < 150)
+        if ( stoi(b[7]) < 150)
         {
             Data.back()[(int)Fields::MaxHeartRate] = (int)MaxHeartRate::Low;
         }
@@ -144,10 +158,18 @@ void HeartDataSet::readDatasetData()
         }
 
         // Exercise Induced Angina
-        Data.back()[(int)Fields::ExerciseAngina] = stoi(b[7]);
+        if (stoi(b[8]) == 0)
+        {
+            Data.back()[(int)Fields::ExerciseAngina] = (int)ExerciseAngina::No;
+        }
+        else if (stoi(b[8]) == 1)
+        {
+            Data.back()[(int)Fields::ExerciseAngina] = (int)ExerciseAngina::Yes;
+        }
+
 
         // Old Peak
-        if (stoi(b[8]) < 1)
+        if (stoi(b[9]) < 1)
         {
             Data.back()[(int)Fields::PreviousPeak] = (int)PreviousPeak::Low;
         }
@@ -157,11 +179,11 @@ void HeartDataSet::readDatasetData()
         }
         
         // Slope
-        if (stoi(b[9]) == 2)
+        if (stoi(b[10]) == 2)
         {
             Data.back()[(int)Fields::Slope] = (int)Slope::Low;
         }
-        else if (stoi(b[9]) == 1)
+        else if (stoi(b[10]) == 1)
         {
             Data.back()[(int)Fields::Slope] = (int)Slope::Plane;
         }
@@ -170,16 +192,38 @@ void HeartDataSet::readDatasetData()
             Data.back()[(int)Fields::Slope] = (int)Slope::Null;
         }
 
+        // Number of Major Vessels
+        if (stoi(b[11]) == 0)
+        {
+            Data.back()[(int)Fields::MajorVesselNum] = (int)MajorVesselNum::Zero;
+        }
+        else if (stoi(b[11]) == 1)
+        {
+            Data.back()[(int)Fields::MajorVesselNum] = (int)MajorVesselNum::One;
+        }
+        else if (stoi(b[11]) == 2)
+        {
+            Data.back()[(int)Fields::MajorVesselNum] = (int)MajorVesselNum::Two;
+        }
+        else if (stoi(b[11]) == 3)
+        {
+            Data.back()[(int)Fields::MajorVesselNum] = (int)MajorVesselNum::Three;
+        }
+        else if (stoi(b[11]) == 4)
+        {
+            Data.back()[(int)Fields::MajorVesselNum] = (int)MajorVesselNum::Four;
+        }
+
         // Thallasemia
-        if ( stoi(b[10]) == 3)
+        if ( stoi(b[12]) == 3)
         {
             Data.back()[(int)Fields::Thallasemia] = (int)Thallasemia::Fixable;
         }
-        else if ( stoi(b[10]) == 2)
+        else if ( stoi(b[12]) == 2)
         {
             Data.back()[(int)Fields::Thallasemia] = (int)Thallasemia::Normal;
         }
-        else if ( stoi(b[10]) == 1)
+        else if ( stoi(b[12]) == 1)
         {
             Data.back()[(int)Fields::Thallasemia] = (int)Thallasemia::Unfixable;
         }
@@ -189,7 +233,7 @@ void HeartDataSet::readDatasetData()
         }
 
         // Output
-        if (stoi(b[11]) == 1)
+        if (stoi(b[13]) == 1)
         {
             Data.back()[(int)Fields::Output] = (int)Output::Yes;
         }
@@ -202,11 +246,6 @@ void HeartDataSet::readDatasetData()
     }
     
     setEntropy();
-}
-
-void HeartDataSet::makeTree()
-{
-
 }
 
 void HeartDataSet::setEntropy()
@@ -232,7 +271,7 @@ void HeartDataSet::setEntropy()
     entropy = (float)(-((float)(outputNo / dataSize) * log2(outputNo / dataSize)) - ((outputYes / dataSize) * log2(outputYes / dataSize)));
 }
 
-float HeartDataSet::getEntropy()
+float HeartDataSet::getEntropy() const
 {
     return entropy;
 }
@@ -240,8 +279,14 @@ float HeartDataSet::getEntropy()
 float HeartDataSet::getInformationGain(Fields field)
 {
     setEntropy();
-
+    float informationGain = entropy;
     float totalCases = (float)Data.size();
+
+    if (field == Fields::Output)
+    {
+        return 0.0f;
+    }
+
     for (auto b : matrix.at(field))
     {
         float totalBCases = 0;
@@ -262,10 +307,100 @@ float HeartDataSet::getInformationGain(Fields field)
                 }
             }
         }
+
+        // In case this member is called on a field that has already been split
+        if ( positiveBCases == totalBCases || negativeBCases == totalBCases)
+        {
+            return 0.0f;
+        }
+
+        float bTerm = - (positiveBCases/totalBCases) * log2(positiveBCases/totalBCases) 
+                        - (negativeBCases/totalBCases) * log2(negativeBCases/totalBCases);
+        
+        informationGain -= (totalBCases/totalCases) * bTerm;
+
+        // std::cout << "bTerm: " << bTerm << std::endl;
     }
 
+    return informationGain;
+}
 
-    float informationGain = entropy;
+HeartDataSet HeartDataSet::giveFieldChild(int fieldNum, int value)
+{
+    HeartDataSet child;
 
-    return 0.0f;
+    for (auto b : Data)
+    {
+        if ( b[fieldNum] == value)
+        {
+            child.Data.push_back(b);
+        }
+    }
+
+    child.remainingFields = remainingFields - 1;
+
+    return child;
+}
+
+int HeartDataSet::getRemainingFields() const
+{
+    return remainingFields;
+}
+
+std::map<Fields, std::vector<int>>& HeartDataSet::getMatrix()
+{
+    return matrix;
+}
+
+void makeTree(HeartDataSet &hds , nlohmann::json &j)
+{
+
+    if (hds.getRemainingFields() == 0)
+    {
+        return;
+    }
+
+    if (hds.getRemainingFields() > 0)
+    {
+        // Finds the field with the highest information gain
+
+        int highestInformationGainField = 0;
+        float highestInformationGain = 0.0f;
+        float tempInformationGain = 0.0f;
+
+        int fieldIndex = 0;
+        Fields maxInformationGainField = Fields::Output;
+        for (auto b : vFields)
+        {
+            tempInformationGain = hds.getInformationGain(b);
+            if ( tempInformationGain > highestInformationGain )
+            {
+                highestInformationGain = tempInformationGain;
+                maxInformationGainField = b;
+            }
+        }
+        if (maxInformationGainField == Fields::Output)
+        {
+            j["values"]["label"] = "Yes";
+            j["values"]["label"] = "No";
+            return;
+        }
+
+        fieldIndex = (int)maxInformationGainField;
+        // Creates a node from the highest information gain field
+
+        j["Field"] = fieldText[fieldIndex].c_str();
+        j["values"] = {};
+
+        for ( auto v : hds.getMatrix().at(maxInformationGainField) )
+        {
+
+            j["values"]["Field"] = std::to_string(v);
+            makeTree(hds.giveFieldChild(fieldIndex , v) , j);
+        }
+    }
+
+    std::ofstream file("tree.json");
+    file << j;
+    return;
 }
