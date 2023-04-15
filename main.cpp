@@ -12,5 +12,7 @@ int main(int, char *[])
 
     std::cout << "The entropy of the loaded DataSet is: " << hds.getEntropy() << std::endl;
 
+    hds.getInformationGain(Fields::MaxHeartRate);
+
     return 0;
 }
