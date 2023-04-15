@@ -261,6 +261,20 @@ float HeartDataSet::getInformationGain(Fields field)
 
     case Fields::ChestPain:
     {
+        float casesTypical = 0;
+        float casesAtypical = 0;
+        float casesOther = 0;
+        float casesNull = 0;
+
+        for (auto b : Data)
+        {
+            if ( b.chestPain == ChestPain::Typical) casesTypical++;
+            else if (b.chestPain == ChestPain::Atypical) casesAtypical++;
+            else if (b.chestPain == ChestPain::Other) casesOther++;
+            else if (b.chestPain == ChestPain::Null) casesNull++;
+        }
+
+        return entropy - (casesTypical/totalCases) * log2(casesTypical/totalCases);
 
     }
     
